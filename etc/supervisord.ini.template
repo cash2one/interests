@@ -1,0 +1,50 @@
+[program:{{project_name}}]
+command=/usr/local/py34/bin/uwsgi
+  --wsgi-file={{project_dir}}/{{project_name}}/wsgi.py
+  --socket={{project_dir}}/var/run/{{project_name}}_%(process_num)02d.sock
+
+directory={{project_dir}}/{{project_name}}
+environment=DJANGO_SETTINGS_MODULE="settings.production"
+
+numprocs=4
+process_name=%(program_name)s_%(process_num)02d
+
+user=nginx
+umask=022
+priority=999
+autostart=true
+autorestart=true
+startsecs=10
+startretries=3
+exitcodes=0,2
+stopsignal=TERM
+stopwaitsecs=10
+
+stdout_logfile_maxbytes=1MB
+stdout_logfile_backups=10
+stdout_capture_maxbytes=1MB
+stdout_logfile={{project_dir}}/var/log/7lk.{{project_name}}.log
+stderr_logfile_maxbytes=1MB
+stderr_logfile_backups=10
+stderr_capture_maxbytes=1MB
+stderr_logfile={{project_dir}}/var/log/7lk.{{project_name}}.log
+
+[program:{{project_name}}_celery_worker]
+command=/usr/local/py34/bin/python3.4 {{project_dir}}/{{project_name}}/manage.py celery worker
+process_name=%(program_name)s_%(process_num)02d                                 
+numprocs=4                                                                      
+priority=100                                                                    
+autostart=true                                                                  
+autorestart=true                                                                
+user=nginx                                                                      
+log_stdout=true                                                                 
+log_stderr=true                                                                 
+                                                                                 
+[program:{{project_name}}_celery_beat]
+directory={{project_dir}}/{{project_name}}/
+command=/usr/local/py34/bin/python3.4 manage.py celery beat
+autostart=true                                                                     
+autorestart=true                                                                   
+user=nginx                                                                         
+log_stdout=true                                                                    
+log_stderr=true

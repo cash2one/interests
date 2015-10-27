@@ -1,0 +1,23 @@
+; 用于生产环境中supervisor的主配置，请不要随便更改
+; 有问题请咨询lianzixin@7lk.com yangxiantiao
+
+[unix_http_server]
+file=/tmp/7lk.supervisor.sock
+
+;[inet_http_server]
+;file=127.0.0.1:9001
+
+[supervisord]
+loglevel=info
+nodaemon=false
+logfile=/var/log/7lk.supervisord.log
+pidfile=/var/run/7lk.supervisord.pid
+
+[rpcinterface:supervisor]
+supervisor.rpcinterface_factory = supervisor.rpcinterface:make_main_rpcinterface
+
+[supervisorctl]
+serverurl=unix:///tmp/7lk.supervisor.sock
+
+[include]
+files=/etc/supervisor.d/*.ini

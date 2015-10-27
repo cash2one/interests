@@ -1,0 +1,26 @@
+upstream stock{
+    server unix://{{project_dir}}/var/run/stock_00.sock;
+    server unix://{{project_dir}}/var/run/stock_01.sock;
+    server unix://{{project_dir}}/var/run/stock_02.sock;
+    server unix://{{project_dir}}/var/run/stock_03.sock;
+}
+
+server {
+    listen       80;
+    server_name  {{project_name}}.7lk.cn;
+
+    access_log  /app/log/nginx/{{project_name}}.com.log;
+    error_log  /app/log/nginx/{{project_name}}.com.log;
+
+    charset     utf-8;
+    client_max_body_size 75M;
+
+    location /static {
+        alias {{project_dir}}/static;
+    }
+
+    location / {
+        uwsgi_pass  stock;
+        include     uwsgi_params;
+    }
+}
