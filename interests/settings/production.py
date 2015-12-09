@@ -1,83 +1,56 @@
-"""
-Django settings for interests project.
-
-For more information on this file, see
-https://docs.djangoproject.com/en/1.7/topics/settings/
-
-For the full list of settings and their values, see
-https://docs.djangoproject.com/en/1.7/ref/settings/
-"""
-
-# Build paths inside the project like this: os.path.join(BASE_DIR, ...)
+# -*- coding: utf-8 -*-
+from .base import *
+from utils.config import Config
 import os
-BASE_DIR = os.path.dirname(os.path.dirname(__file__))
+import re
 
+MYSQL_CONFIG = Config.get('config', 'mysql')
 
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/1.7/howto/deployment/checklist/
+db_host = MYSQL_CONFIG.get('default').get('host')
+db_port = MYSQL_CONFIG.get('default').get('port')
+db_name = MYSQL_CONFIG.get('default').get('db')
+db_user = MYSQL_CONFIG.get('default').get('user')
+db_password = MYSQL_CONFIG.get('default').get('password')
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = '-!p5y)=pm@g^)j#or#p!gav!5c=8&b^$kkeztb-784k5slqgl+'
+pattern = re.compile('^%.*%$')
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+if pattern.match(str(db_host)):
+    db_host = os.environ.get(db_host.strip('%'), None)
 
-TEMPLATE_DEBUG = True
+if pattern.match(str(db_port)):
+    db_port = os.environ.get(db_port.strip('%'), None)
 
-ALLOWED_HOSTS = []
+if pattern.match(str(db_name)):
+    db_name = os.environ.get(db_name.strip('%'), None)
 
+if pattern.match(str(db_user)):
+    db_user = os.environ.get(db_user.strip('%'), None)
 
-# Application definition
-
-INSTALLED_APPS = (
-    'django.contrib.admin',
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
-    'django.contrib.sessions',
-    'django.contrib.messages',
-    'django.contrib.staticfiles',
-)
-
-MIDDLEWARE_CLASSES = (
-    'django.contrib.sessions.middleware.SessionMiddleware',
-    'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.auth.middleware.SessionAuthenticationMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware',
-    'django.middleware.clickjacking.XFrameOptionsMiddleware',
-)
-
-ROOT_URLCONF = 'interests.urls'
-
-WSGI_APPLICATION = 'interests.wsgi.application'
-
-
-# Database
-# https://docs.djangoproject.com/en/1.7/ref/settings/#databases
+if pattern.match(str(db_password)):
+    db_password = os.environ.get(db_password.strip('%'), None)
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+        'ENGINE': 'django.db.backends.mysql',
+        'HOST': db_host,
+        'PORT': db_port,
+        'NAME': db_name,
+        'USER': db_user,
+        'PASSWORD': db_password,
+        'OPTIONS': {
+            'init_command': 'SET storage_engine=INNODB',
+        },
+    },
+    'online_goods_service': {
+        'ENGINE': 'django.db.backends.mysql',
+        'HOST': MYSQL_CONFIG.get('online_goods_service').get('host'),
+        'PORT': MYSQL_CONFIG.get('online_goods_service').get('port'),
+        'NAME': MYSQL_CONFIG.get('online_goods_service').get('db'),
+        'USER': MYSQL_CONFIG.get('online_goods_service').get('user'),
+        'PASSWORD': MYSQL_CONFIG.get('online_goods_service').get('password'),
+        'OPTIONS': {
+        'init_command': 'SET storage_engine=INNODB',
+        }
     }
 }
 
-# Internationalization
-# https://docs.djangoproject.com/en/1.7/topics/i18n/
-
-LANGUAGE_CODE = 'en-us'
-
-TIME_ZONE = 'UTC'
-
-USE_I18N = True
-
-USE_L10N = True
-
-USE_TZ = True
-
-
-# Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/1.7/howto/static-files/
-
-STATIC_URL = '/static/'

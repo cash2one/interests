@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 import os
-from celery.schedules import crontab
+# from celery.schedules import crontab
 import djcelery
 from utils.config import Config
 
