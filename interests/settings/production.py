@@ -41,16 +41,16 @@ DATABASES = {
             'init_command': 'SET storage_engine=INNODB',
         },
     },
-    'online_goods_service': {
-        'ENGINE': 'django.db.backends.mysql',
-        'HOST': MYSQL_CONFIG.get('online_goods_service').get('host'),
-        'PORT': MYSQL_CONFIG.get('online_goods_service').get('port'),
-        'NAME': MYSQL_CONFIG.get('online_goods_service').get('db'),
-        'USER': MYSQL_CONFIG.get('online_goods_service').get('user'),
-        'PASSWORD': MYSQL_CONFIG.get('online_goods_service').get('password'),
-        'OPTIONS': {
-        'init_command': 'SET storage_engine=INNODB',
-        }
-    }
+    # 'online_goods_service': {
+    #     'ENGINE': 'django.db.backends.mysql',
+    #     'HOST': MYSQL_CONFIG.get('online_goods_service').get('host'),
+    #     'PORT': MYSQL_CONFIG.get('online_goods_service').get('port'),
+    #     'NAME': MYSQL_CONFIG.get('online_goods_service').get('db'),
+    #     'USER': MYSQL_CONFIG.get('online_goods_service').get('user'),
+    #     'PASSWORD': MYSQL_CONFIG.get('online_goods_service').get('password'),
+    #     'OPTIONS': {
+    #         'init_command': 'SET storage_engine=INNODB',
+    #     }
+    # }
 }
 
