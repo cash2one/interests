@@ -2,28 +2,6 @@
     padding: 0px;
     margin: 0px;
 }
-@font-face {
-    font-family:FontAwesome;src:url(../fonts/fontawesome-webfont.eot?v=3.2.1);
-    src:url(../fonts/fontawesome-webfont.eot?#iefix&v=3.2.1)
-    format('embedded-opentype'),url(../fonts/fontawesome-webfont.woff?v=3.2.1)
-    format('woff'),url(../fonts/fontawesome-webfont.ttf?v=3.2.1)
-    format('truetype'),url(../fonts/fontawesome-webfont.svg#fontawesomeregular?v=3.2.1)
-    format('svg');font-weight:400;font-style:normal
-}
-.icon-chevron-right:before{content:"\f054";padding-left:10px;}
-.icon-chevron-down:before {content: "\f078"}
-.icon-user:before {content: "\f007"}
-.icon-gear:before,.icon-cog:before {content: "\f013"}
-.icon-signout:before {content: "\f08b"}
-.icon-chevron-down:before{content:"\f078"}
-.icon-home:before{content:"\f015";font-size: 16px}
-.icon-reorder:before{content:"\f0c9";font-size: 16px}
-.icon-signal:before{content:"\f012";font-size: 16px}
-.icon-location-arrow:before{content:"\f124";font-size: 16px}
-.glyph-icon{
-    vertical-align:middle;
-    font-family: FontAwesome;font-weight: 400;font-size:12px;font-style: normal;padding-top:5px;padding-right: 5px;
-}
 html,body{height:100%;overflow:hidden;}
 body{padding: 0px;
     margin: 0px;
@@ -31,7 +9,7 @@ body{padding: 0px;
     font-family: "Helvetica Neue","Hiragino Sans GB","Microsoft YaHei","\9ED1\4F53",Arial,sans-serif !important;
     color: #222;
     font-size: 14px;
-    /*background-color: #e7e8eb;*/
+    background-color: #e7e8eb;
 }
 /*顶部div*/
 .layout_top_header{

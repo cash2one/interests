@@ -2,9 +2,9 @@
 <html>
 <head lang="zh-han">
     <meta charset="UTF-8">
-    <title>七乐康库存系统</title>
+    <title>个人兴趣管理系统</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="七乐康库存系统登录页面">
+    <meta name="description" content="个人兴趣管理系统登录页面">
 
     <!-- The CSS Style-->
     <link id="bs-css" href="/static/interests/css/bootstrap.min.css" rel="stylesheet">
@@ -61,72 +61,7 @@
     <!-- The jQuery Script-->
     <script src="/static/interests/js/jquery-2.1.1.min.js"></script>>
     <!-- The Script-->
-    <script>
-        $(document).ready(function()
-        {
-            var doc=$('html').addClass('js-login'),
-                container = $('#container-login'),
-                formLogin = $('#form-login'),
-                centered;
-
-            /*This function will handle the login process through AJAX*/
-            formLogin.submit(function(event)
-            {
-                var login = $.trim($('#login').val()),
-                    pass = $.trim($('#pass').val());
-                //check inputs
-                if (login.length == 0)
-                {
-                    alert('Please fill in your login');
-                    return false;
-                }
-                else if (pass.length == 0)
-                {
-                    alert('Please fill in your login');
-                    return false;
-                }
-                else
-                {
-//                  formLogin.clearMessages();
-                    event.preventDefault();
-                    //The AJAX calls
-                    $.ajax({url: "/interests/login/",
-                        type: "post",
-                        data: {
-                            Username: login,
-                            Password: pass
-                        },
-                        success: function(msg)
-                        {
-                            var data = $.parseJSON(msg)
-
-                            if (data.code == "0")
-                            {
-                                document.location.href = '/admin/'
-                            }
-                            else if (data.code == "101")
-                            {
-                                alert('Invalid user/password, please try again');
-                            }
-                            else
-                            {
-                                alert('Invalid user/password, please try again');
-                            }
-                        },
-                        error: function()
-                        {
-                            alert('Error while contacting server, please try again');
-                        }
-                    });
-
-                    setTimeout(function()
-                    {
-                        document.location.href = './'
-                    }, 2000);
-                }
-            });
-        })
-    </script>
+    <script src="/static/interests/js/login.js"></script>
 
 </body>
 </html>

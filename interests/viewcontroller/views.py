@@ -40,5 +40,11 @@ def logout(request):
     """
     auth.logout(request)
     return render_to_response('login.html')
-    # return HttpResponseRedirect('/interests/login')
 
+
+@login_required
+def index(request):
+    """
+    主页
+    """
+    return render_to_response('index.html')

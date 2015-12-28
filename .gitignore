@@ -40,4 +40,6 @@ log/
 .python-version
 pylint.cfg
 celerybeat-schedule.*
-stock/celerybeat.pid
+interests/celerybeat.pid
+static/rest_framework
+static/admin

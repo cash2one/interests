@@ -8,4 +8,5 @@ from viewcontroller import views
 urlpatterns = patterns('viewcontroller.views',
                        url(r'^login/$', views.login),
                        url(r'^logout/$', views.logout),
+                       url(r'^index/$', views.index),
                        )

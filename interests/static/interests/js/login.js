@@ -41,7 +41,7 @@ $(document).ready(function()
 
                     if (data.code == "0")
                     {
-                        document.location.href = '/admin/'
+                        document.location.href = '/interests/index/'
                     }
                     else
                     {
