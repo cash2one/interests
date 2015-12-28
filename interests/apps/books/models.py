@@ -15,7 +15,7 @@ class DouBanBook(models.Model):
                                 null=True, verbose_name='图书标题')
     author = models.CharField(default='', max_length=256, blank=True,
                               null=True, verbose_name='作者')
-    pubdate = models.DateField(blank=True, null=True, help_text=today_str,
+    pubdate = models.CharField(blank=True, null=True, max_length=20,
                                verbose_name='出版年')
 
     # tags
@@ -46,10 +46,10 @@ class DouBanBook(models.Model):
     alt = models.URLField(default='', max_length=256, blank=True,
                           null=True, verbose_name='访问地址')
     book_id = models.IntegerField(default='', blank=True, verbose_name='图书ID')
-    isbn_10 = models.CharField(verbose_name='ISBN_10', default='', max_length=10,
-                               blank=True)
-    isbn_13 = models.CharField(verbose_name='ISBN_13', default='', max_length=10,
-                               blank=True)
+    isbn10 = models.CharField(verbose_name='ISBN_10', default='', max_length=10,
+                              blank=True)
+    isbn13 = models.CharField(verbose_name='ISBN_13', default='', max_length=13,
+                              primary_key=True)
     publisher = models.CharField(default='', max_length=256, blank=True,
                                  null=True, verbose_name='出版社')
     title = models.CharField(default='', max_length=128, blank=True,

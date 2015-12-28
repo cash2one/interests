@@ -16,6 +16,8 @@ from utils.constants import (
     value_error_res,
 )
 
+from utils.extra_tools import filter_book_info
+
 BASE_API_URL = 'https://api.douban.com/v2/book/'
 
 
@@ -29,44 +31,19 @@ def get_book_by_id(request):
         book_info_rep = requests.get(request_id_url)
         if book_info_rep.status_code == 200:
             book_info = book_info_rep.json()
-        book_query_set = DouBanBook.objects.filter(
-            **{'book_id': book_id,
-               'isbn_10': book_info.get('isbn10'),
-               'isbn_13': book_info.get('isbn13')})
+        else:
+            return HttpResponse(request_error_res)
+        q_data = {'book_id': book_id,
+                  'isbn10': book_info.get('isbn10'),
+                  'isbn13': book_info.get('isbn13')}
+        book_query_set = DouBanBook.objects.filter(Q(**q_data))
 
         if book_query_set.exists():
-            book = book_query_set.__dict__()
-        if not book_query_set.exists():
-            book = {
-                'numRaters': book_info.get('rating').get('numRaters'),
-                'average': book_info.get('rating').get('average'),
-                'subtitle': book_info.get('rating').get('subtitle'),
-                'author': book_info.get('author'),
-                'pubdate': book_info.get('pubdate'),
-                'tags': book_info.get('tags'),
-                'origin_title': book_info.get('origin_title'),
-                'book_image': book_info.get('image'),
-                'binding': book_info.get('binding'),
-                'translator': book_info.get('translator'),
-                'catalog': book_info.get('catalog'),
-                'ebook_url': book_info.get('ebook_url'),
-                'pages': book_info.get('pages'),
-                'face_s': book_info.get('images').get('small'),
-                'face_m': book_info.get('images').get('medium'),
-                'face_l': book_info.get('images').get('large'),
-                'alt': book_info.get('alt'),
-                'book_id': book_id,
-                'isbn_10': book_info.get('isbn10'),
-                'isbn_13': book_info.get('isbn13'),
-                'publisher': book_info.get('publisher'),
-                'title': book_info.get('title'),
-                'url': book_info.get('url'),
-                'author_intro': book_info.get('author_intro'),
-                'summary': book_info.get('summary'),
-                'price': book_info.get('price'),
-                'ebook_price': book_info.get('ebook_price')
-            }
+            book_info = book_query_set.first().__dict__
+            book = filter_book_info(book_info, book_id)
             logger.info(book)
+        else:
+            book = filter_book_info(book_info, book_id)
             try:
                 DouBanBook.objects.create(**book)
             except Exception as e:
