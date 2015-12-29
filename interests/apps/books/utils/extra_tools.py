@@ -2,7 +2,40 @@
 import time
 import json
 from decimal import Decimal
+from django.db.models import Q
+from apps.books.models import DouBanBook
 from utils.log import logger
+
+from utils.constants import (
+    success_res,
+    invalid_query_res,
+    request_error_res,
+    value_error_res,
+)
+
+
+def return_book_info(book_info_rep, book_id=None):
+    """返回book的信息"""
+    if book_info_rep.status_code == 200:
+        book_info = book_info_rep.json()
+    else:
+        return request_error_res
+    q_data = {'isbn10': book_info.get('isbn10'),
+              'isbn13': book_info.get('isbn13')}
+    book_query_set = DouBanBook.objects.filter(Q(**q_data))
+
+    if book_query_set.exists():
+        book_info = book_query_set.first().__dict__
+        book = filter_book_info(book_info, book_id)
+        logger.info(book)
+    else:
+        book = filter_book_info(book_info, book_id)
+        try:
+            DouBanBook.objects.create(**book)
+        except Exception as e:
+            logger.info(e)
+            return value_error_res
+    return book
 
 
 def filter_book_info(book_info, book_id=None):
@@ -33,6 +66,11 @@ def filter_book_info(book_info, book_id=None):
         average = "%.2f" % average
     book['average'] = average
 
+    if book_id:
+        book['book_id'] = book_id
+    else:
+        book['book_id'] = book_info.get('id')
+
     book_common = {
         'subtitle': book_info.get('subtitle'),
         'pubdate': book_info.get('pubdate'),
@@ -46,7 +84,6 @@ def filter_book_info(book_info, book_id=None):
         'ebook_url': book_info.get('ebook_url'),
         'pages': book_info.get('pages'),
         'alt': book_info.get('alt'),
-        'book_id': book_id,
         'isbn10': book_info.get('isbn10'),
         'isbn13': book_info.get('isbn13'),
         'publisher': book_info.get('publisher'),
