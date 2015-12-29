@@ -1,3 +1,4 @@
+## 一、项目架构
 #### 1、项目结构
 ```
 project_demo
@@ -85,3 +86,8 @@ coverage run --source='apps,utils' {project..}/manage.py test --settings=setting
 # 输出统计结果
 coverage report --omit='*/__init__*,*/urls*'
 ```
+
+## 二、项目页面
+
+#### 1、主页
+![index](./var/readme_img/index.png)

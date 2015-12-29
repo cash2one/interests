@@ -61,20 +61,10 @@ def filter_book_info(book_info):
         book['book_image'] = book_info.get('book_image')
         book['book_id'] = book_info.get('book_id')
 
-    # pubdate = book_info.get('pubdate')
-    # if hasattr(pubdate, 'isoformat'):
-    #     pubdate = pubdate.isoformat()
-    # book['pubdate'] = pubdate
-
     average = book.get('average')
     if isinstance(average, Decimal):
         average = "%.2f" % average
     book['average'] = average
-
-    # if book_id:
-    #     book['book_id'] = book_id
-    # else:
-    #     book['book_id'] = book_info.get('id')
 
     book_common = {
         'subtitle': book_info.get('subtitle'),
