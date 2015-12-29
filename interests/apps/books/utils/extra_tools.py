@@ -14,10 +14,11 @@ from utils.constants import (
 )
 
 
-def return_book_info(book_info_rep, book_id=None):
+def return_book_info(book_info_rep):
     """返回book的信息"""
     if book_info_rep.status_code == 200:
         book_info = book_info_rep.json()
+        logger.info(book_info)
     else:
         return request_error_res
     q_data = {'isbn10': book_info.get('isbn10'),
@@ -26,10 +27,10 @@ def return_book_info(book_info_rep, book_id=None):
 
     if book_query_set.exists():
         book_info = book_query_set.first().__dict__
-        book = filter_book_info(book_info, book_id)
+        book = filter_book_info(book_info)
         logger.info(book)
     else:
-        book = filter_book_info(book_info, book_id)
+        book = filter_book_info(book_info)
         try:
             DouBanBook.objects.create(**book)
         except Exception as e:
@@ -38,7 +39,7 @@ def return_book_info(book_info_rep, book_id=None):
     return book
 
 
-def filter_book_info(book_info, book_id=None):
+def filter_book_info(book_info):
     """
     过滤查询数据
     """
@@ -49,12 +50,16 @@ def filter_book_info(book_info, book_id=None):
         book['face_s'] = book_info.get('images').get('small')
         book['face_m'] = book_info.get('images').get('medium')
         book['face_l'] = book_info.get('images').get('large')
+        book['book_image'] = book_info.get('image')
+        book['book_id'] = book_info.get('id')
     except:
         book['numRaters'] = book_info.get('numRaters')
         book['average'] = book_info.get('average')
         book['face_s'] = book_info.get('face_s')
         book['face_m'] = book_info.get('face_m')
         book['face_l'] = book_info.get('face_l')
+        book['book_image'] = book_info.get('book_image')
+        book['book_id'] = book_info.get('book_id')
 
     # pubdate = book_info.get('pubdate')
     # if hasattr(pubdate, 'isoformat'):
@@ -66,10 +71,10 @@ def filter_book_info(book_info, book_id=None):
         average = "%.2f" % average
     book['average'] = average
 
-    if book_id:
-        book['book_id'] = book_id
-    else:
-        book['book_id'] = book_info.get('id')
+    # if book_id:
+    #     book['book_id'] = book_id
+    # else:
+    #     book['book_id'] = book_info.get('id')
 
     book_common = {
         'subtitle': book_info.get('subtitle'),
@@ -77,7 +82,6 @@ def filter_book_info(book_info, book_id=None):
         'author': book_info.get('author'),
         'tags': book_info.get('tags'),
         'origin_title': book_info.get('origin_title'),
-        'book_image': book_info.get('image'),
         'binding': book_info.get('binding'),
         'translator': book_info.get('translator'),
         'catalog': book_info.get('catalog'),
