@@ -1,0 +1,672 @@
+#!/bin/bash
+##################
+# 项目自动安装部署脚本
+# by yangxiantiao 2015-08-24
+# modified by xiezhigang 2015-09-16
+##################
+
+# 系统版本
+os_version=$(awk '{print $1}' /etc/redhat-release)
+
+# Python的安装路径
+prefix="/usr/local/py34"
+
+# 取得项目路径
+project_dir=$(dirname $(pwd))
+
+# 取得当前项目名
+project_name=$(echo $project_dir|sed -r 's@/.*?/(\w+)@\1@g')
+
+project_name_upper=$(echo $project_name | tr "[a-z]" "[A-Z]")
+
+# 帮助函数
+ishelp(){
+    color r "Usage:"
+    color y "\tsh install-ctl <command> [option]"
+    color r "Command:"
+    color y "\tinstall"
+    color r "Option:"
+    color y "\t--all"
+    color y "\t--with-conf-env"
+    color y "\t--with-mysql-db"
+    color y "\t--with-conf-file"
+    color y "\t--with-sys-env"
+    color y "\t--with-py34"
+    color y "\t--with-web-env"
+    color y "\t--with-supervisor"
+    color y "\t--with-py-extra"
+    color y "\t--with-djdb"
+    color y "\t--with-start-services"
+    color y "\t--update-local"
+    color y "\t--update-remote"
+    color r "Comments:"
+    color g "Command:"
+    color g "\tinstall                  安装"
+    color g "Option:"
+    color g "\t--all                    安装全部模块"
+    color g "\t--with-conf-env          配置环境变量"
+    color g "\t--with-mysql-db          初始化数据库"   
+    color g "\t--with-conf-file         初始化配置文件"   
+    color g "\t--with-sys-env           安装系统依赖的软件"
+    color g "\t--with-py34              安装python3"
+    color g "\t--with-web-env           安装web服务依赖软件"
+    color g "\t--with-supervisor        安装supervisor"
+    color g "\t--with-py-extra          安装python项目第三方包"
+    color g "\t--with-djdb              初始化django数据库"
+    color g "\t--with-start-services    开始所有的服务"
+    color g "\t--with-update-local      更新本地代码(update)"
+    color g "\t--with-update-remote     打包本地代码(update)"
+}
+
+# 日期函数
+PackDate(){
+    echo "`date +'%Y-%m-%d %H:%M:%S'`"
+}
+
+# 显示颜色，分别是红、黄、绿
+color()
+{
+    local c=$1
+	shift
+	case ${c} in
+	r)
+	echo -e "\033[1;31;1m${*}\033[0m" 
+	;;
+	y)
+	echo -e "\033[0;33;1m${*}\033[0m" 
+	;;
+	g)
+	echo -e "\033[0;32;1m${*}\033[0m" 
+	;;
+	*)
+	echo -e "$(*)"
+	;;
+	esac
+}
+
+# 记录初始化部署日志函数
+log(){
+    echo -e $(PackDate) $@ |tee -a /tmp/7lk.${project_name}.log
+}
+
+# 安装失败退出函数
+check_to_exit(){
+    local ret=$?
+    local fail_pro=${1}
+    if [[ $ret != 0 ]]
+    then
+        color r "$(PackDate) ${1} exec failed."
+        exit 1
+    fi
+    if [[ $ret == 0 ]]
+    then
+        color y "$(PackDate) ${1} exec succeed."
+    fi
+}
+
+
+# 根据模板生成配置，替换nginx、uwsgi、supervisor配置文件中的{{project_dir}}、{{project_name}}
+format_config_file(){
+    log "initializing config.yaml nginx.conf supervisord.ini development.py"
+    /bin/cp -f ${project_dir}/etc/config.yaml.template ${project_dir}/etc/config.yaml 
+    # sed -i "s#{{project_dir}}#${project_dir}#g" ${project_dir}/etc/config.yaml 
+    # sed -i "s#{{project_name}}#${project_name}#g" ${project_dir}/etc/config.yaml 
+    sed -i "s#{{PROJECT_NAME}}#${project_name_upper}#g" ${project_dir}/etc/config.yaml 
+    
+    /bin/cp -f ${project_dir}/etc/nginx.conf.template ${project_dir}/etc/nginx.conf 
+    sed -i "s#{{project_dir}}#${project_dir}#g" ${project_dir}/etc/nginx.conf 
+    sed -i "s#{{project_name}}#${project_name}#g" ${project_dir}/etc/nginx.conf 
+    sed -i "s#{{PROJECT_NAME}}#${project_name_upper}#g" ${project_dir}/etc/nginx.conf 
+
+    /bin/cp -f ${project_dir}/etc/supervisord.ini.template ${project_dir}/etc/supervisord.ini &&
+    sed -i "s#{{project_dir}}#${project_dir}#g" ${project_dir}/etc/supervisord.ini &&
+    sed -i "s#{{project_name}}#${project_name}#g" ${project_dir}/etc/supervisord.ini &&
+    sed -i "s#{{PROJECT_NAME}}#${project_name_upper}#g" ${project_dir}/etc/supervisord.ini &&
+
+    /bin/cp -f ${project_dir}/${project_name}/settings/development.py.template ${project_dir}/${project_name}/settings/development.py
+}
+
+## 配置环境变量
+configure_env(){
+    color y "输入数据库主机:"
+    read  DB_HOST
+    color y "输入数据库端口:"
+    read  DB_PORT
+    color y "输入数据库名:"
+    read  DB
+    color y "输入数据库用户:"
+    read  DB_USER
+    color y "输入数据库密码:"
+    read  DB_PASSWORD 
+    color r "#########################################"
+    color g "数据库主机:${DB_HOST}\n数据库端口:${DB_PORT}\n数据库名:${DB}\n数据库用户:${DB_USER}\n数据库密码:${DB_PASSWORD}"
+    color r "请确认："
+    read -p "输入yes或者no：" var 
+    case $var in 
+    [yY][eE][sS] ) 
+    color y "Your input is $var"
+    echo "#########################################" >> /root/.bash_profile
+    echo "export ${project_name_upper}_DB_HOST=${DB_HOST}" >> /root/.bash_profile 
+    echo "export ${project_name_upper}_DB_PORT=${DB_PORT}" >> /root/.bash_profile
+    echo "export ${project_name_upper}_DB=${DB}" >> /root/.bash_profile
+    echo "export ${project_name_upper}_DB_USER=${DB_USER}" >> /root/.bash_profile
+    echo "export ${project_name_upper}_DB_PASSWORD=${DB_PASSWORD}" >> /root/.bash_profile
+    source /root/.bash_profile
+    ;;
+    [nN][oO] ) 
+    color r "Your input is $var"
+    exit 1
+    ;;
+    * ) 
+    color r "Input Error!"
+    exit 1
+    ;;
+    esac
+    return 0
+}
+
+# 安装启用EPEL源
+install_epel(){
+    rpm -qa|grep epel &>/dev/zero
+    if [[ $? != 0 ]]
+    then
+        log "installing epel-release..."
+        yum install -y epel-release &> /dev/zero
+        if [ $? -eq 0 ]
+        then
+            rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-6
+            log "install epel-release succeed"
+            return 0
+        fi
+        log "failed to install epel-release."
+        return 1
+    else
+        log "epel-release already installed"
+    fi
+}
+
+# 安装系统级别依赖包
+install_common(){
+    rpm_packages="gcc gcc-c++ mysql-devel rabbitmq-server libxml2-devel libxslt-devel \
+    openssl-devel pcre-devel.x86_64 wget python-devel libyaml-devel ncurses-devel python-meld3"
+    for item in ${rpm_packages[@]}
+    do
+        rpm -q $item &>/dev/zero
+        if [[ $? == 0 ]];then
+            log "$item already installed."
+            continue
+        fi
+        log "installing ${item}..."
+        yum install -y $item &> /dev/zero
+        if [[ $? -ne 0 ]]
+        then
+            log "install ${item} failure,please use command: yum install ${item} to install it."
+            return 1
+        else
+            log "install ${item} succeed"
+        fi
+    done
+    return 0
+}
+
+# # 创建项目的数据库
+init_mysql_database(){
+log "init mysql database:${project_name}"
+/usr/bin/mysql -u${DB_USER} -p${DB_PASSWORD} -e \
+"create database if not exists ${DB} default charset utf8"
+if [ $? -eq 0 ]
+then
+   log "create database ${project_name} succeed."
+else
+   log "create database ${project_name} failed."
+   return 1
+fi
+}
+
+# 检查nginx是否已经安装
+check_nginx_installation(){
+    if [[ -d '/usr/local/nginx/sbin' ]]
+    then
+        return 0
+    elif [[ -d '/etc/nginx/sbin' ]]
+    then
+        return 1
+    fi
+    log "nginx is not installed, it would be installed later."
+    return 3
+}
+
+# 安装nginx
+install_nginx(){
+    # 检测nginx是否已安装
+    check_nginx_installation
+
+    #安装nginx
+    ret=$?
+    if [[ $ret == 0 ]]
+    then
+        nginx=/usr/local/nginx/sbin/nginx
+        nginx_conf_dir=/usr/local/nginx/conf.d/
+        nginx_base_conf_dir=/usr/local/nginx/conf/
+    elif [[ $ret == 1 ]]
+    then
+        nginx=/usr/sbin/nginx
+        nginx_conf_dir=/etc/nginx/conf.d
+        nginx_base_conf_dir=/etc/nginx/conf/
+    elif [[ $ret == 3 ]]
+    then
+        log 'installing nginx...'
+        # 杀死系统中有可能存在的nginx进程
+        ps aux| grep nginx| grep -v grep| grep -v uwsgi|awk '{print $2}'|xargs kill -9
+        [ -e /usr/local/nginx/logs/nginx.pid ] && /bin/mv -f  /usr/local/nginx/logs/nginx.pid /tmp
+
+        nginx=/usr/local/nginx/sbin/nginx
+        nginx_conf_dir=/usr/local/nginx/conf.d
+        nginx_base_conf_dir=/usr/local/nginx/conf/
+        cd /opt
+        if [[ ! -e 'nginx-1.8.0.tar.gz' ]]
+        then
+            wget -c http://nginx.org/download/nginx-1.8.0.tar.gz
+        fi
+
+        tar xf nginx-1.8.0.tar.gz &&
+        cd nginx-1.8.0 &&
+        ./configure --prefix=/usr/local/nginx &&
+        make && make install
+        if [[ $? != 0 ]];then
+            return $?
+        fi
+        log "install nginx succeed."
+    fi
+    return 0
+}
+
+# 配置nginx
+init_nginx()
+{
+    # 配置nginx
+    local nginx_config_file=${nginx_conf_dir}/7lk.${project_name}.com.conf 
+    useradd nginx 
+    groupadd nginx 
+    mkdir -p ${project_dir}/var/run/ 
+    mkdir -p ${project_dir}/var/log/ 
+    chown nginx:nginx -R ${project_dir} 
+
+    mkdir -p $nginx_conf_dir 
+    mkdir -p /var/log/nginx 
+    chown nginx:nginx /var/log/nginx 
+
+    [ -e ${nginx_base_conf_dir}/nginx.conf ] && /bin/mv -f  ${nginx_base_conf_dir}/nginx.conf /tmp/nginx.conf.$(date +%F) &&
+    /bin/cp -f ${project_dir}/etc/nginx.base ${nginx_base_conf_dir}/nginx.conf &&
+    /bin/cp -f ${project_dir}/etc/nginx.conf ${nginx_config_file} &&
+    grep ${nginx} /etc/rc.local &> /dev/zero || echo "${nginx}" >> /etc/rc.local
+}
+
+# 配置supervisor
+init_supervisor(){
+    mkdir -p /etc/supervisor.d/ 
+    mkdir -p /var/log/supervisord/ 
+    /bin/cp -f ${project_dir}/etc/supervisord.base /etc/supervisord.conf 
+    /bin/cp -f ${project_dir}/etc/supervisord.ini /etc/supervisor.d/7lk.${project_name}.supervisord.ini 
+    grep supervisord /etc/rc.local &> /dev/zero || echo "supervisord -c /etc/supervisord.conf" >> /etc/rc.local
+    return 0
+}
+
+# 安装pip2
+get_pip(){
+    cd /opt && 
+    wget -c https://bootstrap.pypa.io/get-pip.py &&
+    /usr/bin/python get-pip.py 
+}
+
+# 安装supervisor
+install_supervisor(){  
+    # 安装pip2
+    if [[ ! -x /usr/bin/pip2 ]]
+    then
+        get_pip
+        if [[ $? != 0 ]]
+        then
+            log "Fail to install pip2."
+            return 3
+        fi
+        log "install pip2 succeed"
+    fi
+    
+    # 安装supervisor
+    /usr/bin/pip2 install supervisor
+    if [[ $? != 0 ]]
+    then
+        return 3
+    else
+        log "install supervisor succeed"
+        return 0
+    fi
+}
+
+# 安装Python 3.4.3
+install_python34(){
+    if [[ -d $prefix ]] && [[ $(du -s $prefix|awk '{print $1}') -gt 40000 ]]
+    then
+        log "python 3.4.3 already installed."
+        return 0
+    fi
+    log "install python 3.4.3 to ${prefix}."
+    mkdir -p /usr/local/py34 &>/dev/zero 
+    mkdir /opt 
+    cd /opt &&
+    wget -c https://www.python.org/ftp/python/3.4.3/Python-3.4.3.tgz &&
+    tar xf Python-3.4.3.tgz &&
+    cd Python-3.4.3/ &&
+    ./configure --prefix=/usr/local/py34 &&
+    make && make install 
+    if [[ $? != 0 ]];then
+        log "Failed to install python 3.4.3."
+        return 1
+    else
+        log "install python3.4.3 succeed"
+        return 0
+    fi
+}
+
+# 安装项目依赖的Python包
+install_python_packages(){
+    local packages
+    packages=$(cat ${project_dir}/site-packages/requirements.txt|grep -v '^#'|grep -v '^$')
+    st=$([[ -n ${packages} ]])
+    if [[ $st == 0 ]]
+    then
+        log "File ${packages} does not exists!"
+        return 1
+    fi
+    status=0
+    for package in ${packages}
+    do
+        try_times=3
+        t=0
+        if [[ -n $package ]]
+        then
+            check_package_installation ${package%==*} > /dev/zero && log ${package%==*} already installed && continue
+            while :
+            do
+                ${prefix}/bin/pip3 install ${package}
+                if [[ $? == 0 ]];then
+                    log "install python package ${package} succeed."
+                    break
+                else
+                    t=$(($t+1))
+                    if [[ $t == 3 ]];then
+                           status=1
+                           log "Failed to install ${package}."
+                           break
+                    fi
+                fi
+            done
+        fi
+    done
+    return ${status}
+}
+
+# 检查python包安装情况
+check_package_installation(){
+    ${prefix}/bin/pip3 show $1> /dev/zero
+    return $?
+}
+
+# 安装python额外包，uwsgi、coverage
+install_python_extra_packages(){
+    # 安装pip2
+    if [[ ! -x /usr/bin/pip2 ]];then
+        get_pip
+        state=$?
+        if ! [[ $state == 0 ]]
+        then
+            log "Fail to install pip2." 
+            return $state
+        fi
+        log "install pip2 succeed" 
+    fi
+
+    # uwsgi新版本在服务器上有几率安装失败, 1.9 -> error response header
+    check_package_installation uwsgi
+    if [[ $? == 0 ]]
+    then
+        log uwsgi already installed
+    else
+        ${prefix}/bin/pip3 install "uwsgi>=2.0,<=2.1"
+        state=$?
+        if [[ $state != 0 ]]
+        then
+            log "fail to install uwsgi"
+            return $state
+        fi
+        log "install uwsgi succeed"
+    fi
+
+    check_package_installation coverage
+    if [[ $? == 0 ]]
+    then
+        log uwsgi already installed
+    else
+        ${prefix}/bin/pip3 install coverage
+        state=$?
+        if [[ $state != 0 ]]
+        then
+            log "fail to install coverage"
+            return $state
+        fi
+        log "install coverage succeed"
+    fi
+}
+
+
+# 通过django的migrate初始化数据库表到mysql
+initial_django_database(){
+    log "initializing django database..."
+    ${prefix}/bin/python3.4 ${project_dir}/${project_name}/manage.py makemigrations --noinput 
+    if [[ $? != 0 ]]
+    then
+        return $?
+    fi
+    ${prefix}/bin/python3.4 ${project_dir}/${project_name}/manage.py migrate --noinput 
+    if [[ $? != 0 ]]
+    then
+        return $?
+    fi
+    ${prefix}/bin/python3.4 ${project_dir}/${project_name}/manage.py collectstatic --noinput
+    if [[ $? != 0 ]]
+    then
+        return $?
+    fi
+    log "initialize django database succeed"
+    # ${prefix}/bin/python3.4 ${project_dir}/${project_name}/manage.py makemigrations --settings=settings.production
+    # ${prefix}/bin/python3.4 ${project_dir}/${project_name}/manage.py migrate --settings=settings.production
+}
+
+# 更新本地代码
+update_local_code(){
+    git pull origin develop
+    return $?
+}
+
+# 打包本地代码
+tar_local_code(){
+    mkdir -p /data/backup/
+    tar_dir=$(dirname ${project_dir})
+    tar_name=${project_name}.$RANDOM.tar.gz
+    cd $tar_dir
+    tar -zcf ${tar_name} ${project_name}
+    ret=$?
+    cd - 
+    return $ret
+}
+
+# 更新本地代码
+update_local(){
+    update_local_code
+    check_to_exit "update_local_code"
+}
+
+# 打包本地代码
+tar_local(){
+    tar_local_code
+    check_to_exit "tar_local_code"
+}
+
+# 配置环境变量
+init_configure_env(){
+    configure_env
+    check_to_exit "configure_env"
+}
+
+# 初始化数据库
+init_mysql_db(){
+    init_mysql_database
+    check_to_exit "init_mysql_database"
+}
+
+# 初始化配置文件
+init_conig_file(){
+    # 修改配置文件
+    format_config_file
+    check_to_exit "format_config_file"
+}
+
+# 安装系统依赖的软件
+install_sys_env(){
+    # 安装epel源
+    install_epel
+    check_to_exit "install_epel"
+
+    # 安装系统依赖包
+    install_common
+    check_to_exit "install_common"
+}
+
+# 安装web服务依赖软件
+install_web_env(){
+    # 安装nginx
+    install_nginx
+    check_to_exit "install_nginx"
+    
+    # 初始化nginx
+    init_nginx
+    check_to_exit "init_nginx"
+}
+
+# 安装supervisor
+install_supervisor_env(){
+    # 初始化supervisor
+    init_supervisor
+    check_to_exit "init_supervisor"
+
+    # 安装supervisor
+    install_supervisor
+    check_to_exit "install_supervisor"
+}
+
+# 安装python3.4
+install_py34(){
+    install_python34
+    check_to_exit "install_python34"
+}
+
+# 安装python项目第三方包
+install_python_env(){
+    install_python_packages
+    check_to_exit "install_python_packages"
+    install_python_extra_packages
+    check_to_exit "install_python_extra_packages"
+}
+
+# 初始化django数据库
+initial_django(){
+    initial_django_database
+    check_to_exit "initial_django_database"
+}
+
+# 开启nginx服务
+start_nginx(){
+    nginx="/usr/local/nginx/sbin/nginx"
+    grep ${nginx} /etc/rc.local &> /dev/zero || echo "${nginx}" >> /etc/rc.local
+    ss -ntlp|grep ':80\>' &>/dev/zero
+    if [[ $? != 0 ]]
+    then
+        $nginx -t
+        if [[ $? != 0 ]]
+        then
+            log "nginx configuration error"
+        else
+            log "starting nginx..."
+            $nginx
+        fi
+    else
+        $nginx -t
+        if [[ $? == 0 ]]
+        then
+            log "reloading nginx..."
+            $nginx -s reload
+        else
+            log "nginx configuration error"
+            return 1
+        fi      
+    fi
+    log "start nginx succed"
+    return 0
+}
+
+# 开启supervisor
+start_supervisor(){
+    grep supervisord /etc/rc.local &> /dev/zero || echo "supervisord -c /etc/supervisord.conf" >> /etc/rc.local
+    ps -ef|grep -v grep|grep /usr/bin/supervisord &>/dev/zero
+    if [[ $? == 0 ]]
+    then
+       supervisorctl reload
+    else
+       supervisord -c /etc/supervisord.conf
+    fi
+    if [[ $? == 0 ]]
+    then
+        log "start supervisord succed"
+        return 0
+    else
+        log "start supervisord failed"
+        return 1
+    fi
+}
+
+# 开启rabbitmq
+start_rabbitmq(){
+    chkconfig rabbitmq-server on
+    service rabbitmq-server status &>/dev/zero
+    if [[ $? != 0 ]]
+    then
+        service rabbitmq-server start
+    fi
+    if [[ $? == 0 ]]
+    then
+        log "start rabbitmq-server succed"
+        return 0
+    else
+        log "start rabbitmq-server failed"
+        return 1
+    fi
+}
+
+# 开启相关服务
+start_all_services(){
+    log "starting services..."
+    
+    start_nginx
+    check_to_exit "nginx"
+    
+    start_supervisor
+    check_to_exit "supervisor"
+
+    start_rabbitmq
+    check_to_exit "rabbitmq-server"
+    chown nginx:nginx -R ${project_dir}
+    /usr/bin/supervisorctl restart all
+    log "starting services finished."
+}
+
